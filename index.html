@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Call System Data Flow Diagram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        #diagram {
+            width: 100%;
+            height: 800px;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+            height: 60px;
+            padding: 2px;
+            font: 12px sans-serif;
+            background: gray;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .node-label {
+            fill: #ecf0f1;
+            font-size: 12px;
+            text-anchor: start;
+        }
+        .lottie-container {
+            pointer-events: none;
+        }
+        .legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #2c3e50;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0px 0px 5px #aaa;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+        .highlighted {
+            stroke: #ff0000;
+            stroke-width: 3px;
+        }
+        .faded {
+            opacity: 0.1;
+        }
+        .label-rect {
+            fill: #34495e;
+            stroke: #2c3e50;
+            stroke-width: 1px;
+            rx: 5;
+            ry: 5;
+        }
+    </style>
+</head>
+<body>
+    <h1> Call System Data Flow Diagram</h1>
+    <div id="diagram"></div>
+    <div class="legend"></div>
+    <div class="tooltip"></div>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.4/lottie.min.js"></script>
+    <script>
+        const shapes = ['circle', 'rect', 'ellipse', 'polygon'];
+        const randomShape = () => shapes[d3.randomInt(shapes.length)()];
+
+        const data = {
+            nodes: [
+                { id: "User Authentication", group: "User", lottie: "./User_Authentication.json", color: "#3498db", info: "Handles user authentication.", shape: "circle" },
+                { id: "User Profile", group: "User", lottie: "./User_Authentication.json", color: "#2ecc71", info: "Manages user profiles and contacts.", shape: randomShape() },
+                { id: "Contact List", group: "Contact", lottie: "./contract.json", color: "#e74c3c", info: "Maintains a list of user contacts.", shape: randomShape() },
+                { id: "Call Initiation", group: "Call", lottie: "./call.json", color: "#f39c12", info: "Handles the initiation of audio calls.", shape: randomShape() },
+                { id: "Signaling Server", group: "Server", lottie: "animation1.json", color: "#2980b9", info: "Manages call signaling and session setup.", shape: randomShape() },
+                { id: "Media Server", group: "Server", lottie: "animation2.json", color: "#9b59b6", info: "Routes audio streams between users.", shape: randomShape() },
+                { id: "Audio Processing", group: "Processing", lottie: "animation5.json", color: "#16a085", info: "Processes audio streams for quality and performance.", shape: randomShape() },
+                { id: "Real-Time Communication", group: "Communication", lottie: "animation2.json", color: "#e74c3c", info: "Enables real-time communication.", shape: randomShape() },
+                { id: "Call Management", group: "Management", lottie: "animation1.json", color: "#27ae60", info: "Manages call state and user interface.", shape: randomShape() },
+                { id: "Notifications", group: "Notification", lottie: "animation2.json", color: "#f1c40f", info: "Notifies users of incoming calls and updates.", shape: randomShape() },
+                { id: "Call Recording", group: "Recording", lottie: "animation1.json", color: "#c0392b", info: "Handles recording of audio calls.", shape: randomShape() },
+                { id: "Call History", group: "History", lottie: "animation2.json", color: "#34495e", info: "Stores call history and logs.", shape: randomShape() },
+                { id: "Analytics and Reporting", group: "Analytics", lottie: "animation1.json", color: "#16a085", info: "Provides insights and performance metrics.", shape: randomShape() }
+            ],
+            links: [
+                { source: "User Authentication", target: "User Profile" },
+                { source: "User Profile", target: "Contact List" },
+                { source: "Contact List", target: "Call Initiation" },
+                { source: "Call Initiation", target: "Signaling Server" },
+                { source: "Signaling Server", target: "Media Server" },
+                { source: "Media Server", target: "Audio Processing" },
+                { source: "Audio Processing", target: "Real-Time Communication" },
+                { source: "Real-Time Communication", target: "Call Management" },
+                { source: "Call Management", target: "Notifications" },
+                { source: "Call Management", target: "Call Recording" },
+                { source: "Call Management", target: "Call History" },
+                { source: "Call History", target: "Analytics and Reporting" }
+            ]
+        };
+
+        const diagramElement = document.getElementById('diagram');
+        const width = diagramElement.offsetWidth;
+        const height = diagramElement.offsetHeight;
+
+        const svg = d3.select("#diagram").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .call(d3.zoom().on("zoom", function (event) {
+                svg.attr("transform", event.transform);
+            }))
+            .append("g");
+
+        svg.append("defs").append("marker")
+            .attr("id", "arrow")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 30)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#999");
+
+        const simulation = d3.forceSimulation(data.nodes)
+            .force("link", d3.forceLink(data.links).id(d => d.id).distance(150))
+            .force("charge", d3.forceManyBody().strength(-800))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(50));
+
+        const link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(data.links)
+            .enter().append("line")
+            .attr("stroke-width", 2)
+            .attr("stroke", "#999")
+            .attr("marker-end", "url(#arrow)");
+
+        const node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("g")
+            .data(data.nodes)
+            .enter().append("g")
+            .attr("transform", d => `translate(${d.x},${d.y})`)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended))
+            .on("mouseover", function (event, d) {
+                showTooltip(event, d);
+            })
+            .on("mouseout", hideTooltip)
+            .on("click", function (event, d) {
+                svg.selectAll(".highlighted").classed("highlighted", false);
+                d3.select(this).select("circle, rect, ellipse, polygon").classed("highlighted", true);
+            })
+            .attr("class", d => `node ${d.group}`);
+
+        node.each(function(d) {
+            if (d.shape === 'circle') {
+                d3.select(this).append("circle")
+                    .attr("r", 30)
+                    .attr("fill", d.color);
+            } else if (d.shape === 'rect') {
+                d3.select(this).append("rect")
+                    .attr("width", 60)
+                    .attr("height", 60)
+                    .attr("x", -30)
+                    .attr("y", -30)
+                    .attr("fill", d.color);
+            } else if (d.shape === 'ellipse') {
+                d3.select(this).append("ellipse")
+                    .attr("rx", 30)
+                    .attr("ry", 20)
+                    .attr("fill", d.color);
+            } else if (d.shape === 'polygon') {
+                d3.select(this).append("polygon")
+                    .attr("points", "-30,30 30,30 0,-30")
+                    .attr("fill", d.color);
+            }
+        });
+
+        const lottieContainers = node.append("foreignObject")
+            .attr("class", "lottie-container")
+            .attr("width", 60)
+            .attr("height", 60)
+            .attr("x", -30)
+            .attr("y", -30)
+            .append("xhtml:div")
+            .style("width", "60px")
+            .style("height", "60px")
+            .each(function (d) {
+                lottie.loadAnimation({
+                    container: this,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    path: d.lottie
+                });
+            });
+
+        const labels = node.append("text")
+            .attr("class", "node-label")
+            .attr("dx", 35)  
+            .attr("dy", 5)  
+            .text(d => d.id)
+            .each(function(d) {
+                const bbox = this.getBBox();
+                d.bbox = bbox;
+            });
+
+        node.insert("rect", "text")
+            .attr("class", "label-rect")
+            .attr("x", d => d.bbox.x - 5)
+            .attr("y", d => d.bbox.y - 5)
+            .attr("width", d => d.bbox.width + 10)
+            .attr("height", d => d.bbox.height + 10);
+
+        const flowBalls = svg.append("g")
+            .attr("class", "flow-balls")
+            .selectAll("circle")
+            .data(data.links)
+            .enter().append("circle")
+            .attr("r", 5)
+            .attr("fill", "orange");
+
+        function animateFlowBalls() {
+            flowBalls
+                .attr("cx", d => d.source.x)
+                .attr("cy", d => d.source.y)
+                .transition()
+                .duration(1000)
+                .ease(d3.easeLinear)
+                .attr("cx", d => d.target.x)
+                .attr("cy", d => d.target.y)
+                .on("end", animateFlowBalls);
+        }
+
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            flowBalls
+                .attr("cx", d => d.source.x)
+                .attr("cy", d => d.source.y);
+        });
+
+        animateFlowBalls();
+
+        // Create legend
+        const legend = d3.select(".legend");
+        const uniqueGroups = [...new Set(data.nodes.map(node => node.group))];
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        let currentGroup = null;
+
+        uniqueGroups.forEach((group, i) => {
+            const legendItem = legend.append("div")
+                .attr("class", "legend-item")
+                .on("click", () => {
+                    if (currentGroup === group) {
+                        resetHighlight();
+                        currentGroup = null;
+                    } else {
+                        highlightGroup(group);
+                        currentGroup = group;
+                    }
+                });
+
+            legendItem.append("div")
+                .attr("class", "legend-color")
+                .style("background-color", colorScale(i));
+            
+            legendItem.append("span")
+                .text(group);
+        });
+
+        const tooltip = d3.select(".tooltip");
+
+        function showTooltip(event, d) {
+            tooltip.html(`<strong>${d.id}</strong><br>${d.info}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px")
+                .transition()
+                .duration(200)
+                .style("opacity", 0.9);
+        }
+
+        function hideTooltip() {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
+
+        function highlightGroup(group) {
+            svg.selectAll(".node").classed("faded", d => d.group !== group);
+            svg.selectAll(".links line").classed("faded", d => d.source.group !== group && d.target.group !== group);
+        }
+
+        function resetHighlight() {
+            svg.selectAll(".node").classed("faded", false);
+            svg.selectAll(".links line").classed("faded", false);
+        }
+
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+    </script>
+</body>
+</html>
